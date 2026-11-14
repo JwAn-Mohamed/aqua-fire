@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ocean Pollution Tracker</title>
+   
+    <!-- 1. Load Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+   
+    <!-- 2. Set up basic styling for a full-screen map -->
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+        /* The map container MUST have a defined height */
+        #map {
+            height: 100vh;
+            width: 100vw;
+        }
+        /* Optional: A simple UI overlay for your game/dashboard */
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 50px;
+            z-index: 1000; /* Keeps it above the map */
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- UI Overlay for the user -->
+    <div class="ui-overlay">
+        <h2>EcoTracker RPG</h2>
+        <p>Find and clean pollution hotspots!</p>
+    </div>
+
+    <!-- 3. Create the container where the map will render -->
+    <div id="map"></div>
+
+    <!-- 4. Load Leaflet JavaScript (Must be loaded AFTER Leaflet CSS) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- 5. Initialize the Map and Data -->
+    <script>
+        // Initialize the map and set the starting coordinates (Latitude, Longitude) and zoom level
+        // [20, 0] centers roughly on the Atlantic Ocean. Zoom level 2 shows the whole world.
+        const map = L.map('map').setView([20, 0], 2);
+
+        // Add the base map tiles (the actual imagery). We are using free OpenStreetMap tiles.
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        // --- HACKATHON NEXT STEPS ---
+        // Below is an example of adding a single hardcoded marker.
+        // Later, you will replace this with a fetch() function that reads your AI's 'hotspots.json' file.
+       
+        const testMarker = L.marker([25.0, -71.0]).addTo(map);
+        testMarker.bindPopup("<b>High Risk Zone</b><br>Estimated 500kg of plastic waste.");
+    </script>
+</body>
+</html>
