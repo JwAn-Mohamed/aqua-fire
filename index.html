@@ -9,121 +9,53 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
  
-  <!-- Retro 8-bit Font from Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
- 
   <style>
-    body {
-      margin: 0; padding: 0; overflow: hidden; background-color: #0a1f2d;
-      font-family: 'Press Start 2P', Courier, monospace;
-    }
+    body { margin: 0; padding: 0; overflow: hidden; }
     #map { width: 100vw; height: 100vh; }
-   
-    /* Pixelated retro map with a blue/green ocean tint */
-    .leaflet-tile {
-      image-rendering: pixelated;
-      filter: sepia(0.2) hue-rotate(160deg) saturate(2) contrast(1.2);
-    }
-
-    /* Override Leaflet Popup to look like a retro battle menu */
-    .leaflet-popup-content-wrapper {
-      background-color: #0b3c5d;
-      border: 4px solid #a8e6cf;
-      border-radius: 0; /* Blocky corners */
-      box-shadow: 6px 6px 0px rgba(0,0,0,0.8);
-      color: white;
-    }
-    .leaflet-popup-tip {
-      background-color: #a8e6cf;
-    }
-    .leaflet-popup-close-button {
-      color: white !important;
-    }
-
-    /* Chunky RPG Buttons */
-    .rpg-btn {
-      background-color: #17b978;
-      color: white;
-      border: 3px solid #06263f;
-      padding: 10px;
-      margin: 5px 0;
-      width: 100%;
-      font-family: 'Press Start 2P', Courier, monospace;
-      font-size: 9px;
-      line-height: 1.5;
-      cursor: pointer;
-      box-shadow: 3px 3px 0px #06263f;
-      transition: transform 0.1s, box-shadow 0.1s;
-    }
-    .rpg-btn:active {
-      transform: translate(3px, 3px);
-      box-shadow: 0px 0px 0px #06263f;
-    }
-    .rpg-btn:hover {
-      background-color: #a8e6cf;
-      color: #0b3c5d;
-    }
-
-    /* Dashboard & Floating Elements */
-    .ui-panel {
-      background-color: #0b3c5d;
-      color: white;
-      border: 4px solid #3282b8;
-      padding: 15px;
-      box-shadow: 6px 6px 0px rgba(0,0,0,0.8);
-      border-radius: 4px;
-    }
   </style>
 </head>
 <body>
 
-  <!-- RPG Dashboard UI -->
-  <div class="ui-panel" style="
+  <!-- 1. RPG Dashboard UI -->
+  <div id="rpg-dashboard" style="
     position: absolute; top: 20px; right: 20px; z-index: 1000;
-    font-size: 12px; line-height: 2; min-width: 180px;
+    background-color: #222; color: white; border: 4px solid #fff;
+    padding: 10px 20px; font-family: 'Courier New', Courier, monospace;
+    font-size: 20px; font-weight: bold; border-radius: 8px; box-shadow: 4px 4px 0px #000;
   ">
-    <div id="level-display" style="color: #a8e6cf;">👑 Level: 1</div>
-    <div id="hp-display" style="color: #ff8b94;">❤️ HP: 100</div>
-    <div id="score-display" style="color: #dcedc1;">⭐ Score: 0</div>
+    <div id="level-display" style="color: #ffd700; margin-bottom: 5px;">👑 Level: 1</div>
+    <div id="hp-display" style="color: #ff4d4d; margin-bottom: 5px;">❤️ HP: 100</div>
+    <div id="score-display" style="color: #4da6ff;">⭐ Score: 0</div>
   </div>
 
-  <!-- Real-Life Sidequest UI -->
-  <div style="position: absolute; bottom: 240px; right: 20px; z-index: 1000;">
+  <!-- 2. Real-Life Sidequest UI -->
+  <div id="irl-quest" style="
+    position: absolute; bottom: 130px; left: 20px; z-index: 1000;
+  ">
     <label for="trash-upload" style="
-      display: inline-block;
-      background-color: #17b978; color: white; padding: 12px 15px;
-      border: 4px solid #0b3c5d; font-family: 'Press Start 2P', monospace;
-      font-size: 10px; cursor: pointer; box-shadow: 4px 4px 0px rgba(0,0,0,0.8);
-      text-align: center; line-height: 1.5;
+      background-color: #ffcc00; color: black; padding: 10px 15px;
+      border: 3px solid black; border-radius: 8px; font-family: 'Courier New', Courier, monospace;
+      font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 4px 4px 0px #000;
     ">
-      📸 IRL Quest!<br>(+500 pts)
+      📸 Upload IRL Cleanup! (+500 pts)
     </label>
     <input type="file" id="trash-upload" accept="image/*" capture="environment" style="display: none;">
   </div>
 
-  <!-- Kubble Companion UI -->
+  <!-- 3. Kubble Companion UI -->
   <div id="kubble-container" style="
-    position: absolute; bottom: 20px; right: 20px; z-index: 1000;
-    display: flex; align-items: flex-end; gap: 15px;
+    position: absolute; bottom: 20px; left: 20px; z-index: 1000;
+    display: flex; align-items: flex-end; gap: 10px;
   ">
-    <div class="ui-panel" id="kubble-speech" style="
-      background-color: #e8f4f8; color: #0b3c5d; border-color: #0b3c5d;
-      font-size: 10px; line-height: 1.6; max-width: 250px; margin-bottom: 50px;
-      position: relative;
+    <div id="kubble-speech" style="
+      background-color: white; border: 3px solid #000; border-radius: 15px;
+      padding: 12px 15px; font-family: 'Courier New', Courier, monospace;
+      font-size: 16px; font-weight: bold; max-width: 220px;
+      box-shadow: 4px 4px 0px #888; margin-bottom: 30px;
     ">
-      Let's clean up the ocean! Click a monster!
-      <div style="
-        position: absolute; right: -12px; bottom: 15px;
-        width: 0; height: 0;
-        border-top: 8px solid transparent;
-        border-bottom: 8px solid transparent;
-        border-left: 12px solid #0b3c5d;
-      "></div>
+      Let's clean up the ocean! Click a monster to battle!
     </div>
-    <img id="kubble-sprite" src="image_02bdde.png" alt="Kubble" style="
-      width: 150px; height: auto; image-rendering: pixelated;
-      filter: drop-shadow(4px 4px 0px rgba(0,0,0,0.5));
-    ">
+    <img src="kubble.png" alt="Kubble" style="width: 80px; height: 80px; image-rendering: pixelated;">
   </div>
 
   <!-- Map Container -->
@@ -145,18 +77,17 @@
       maxZoom: 19,
       attribution: '© OpenStreetMap'
     }).addTo(map);
-   
-    // --- Monster Sprite ---
+
     const monsterSprite = L.icon({
       iconUrl: 'monster.png',
       iconSize: [40, 40],
       iconAnchor: [20, 40],
       popupAnchor: [0, -40]
     });
-
+   
     const activeMarkers = {};
 
-    // --- Fetch Monsters ---
+    // --- Fetch Monsters (from hotspots.json) ---
     fetch('hotspots.json')
       .then(response => response.json())
       .then(data => {
@@ -165,16 +96,15 @@
           activeMarkers[spot.id] = marker;
 
           const popupContent = `
-            <div style="text-align: center;">
-              <h3 style="color: #17b978; font-size: 12px; line-height: 1.5;">Wild ${spot.type} appeared!</h3>
-              <p style="font-size: 9px; line-height: 1.5; color: #a8e6cf;">Severity: ${spot.severity}</p>
-              <p style="font-size: 10px; line-height: 1.4; margin-bottom: 15px;">${spot.question}</p>
+            <div style="font-family: 'Courier New', Courier, monospace; text-align: center;">
+              <h3 style="color: red;">Wild ${spot.type} appeared!</h3>
+              <p><strong>Severity:</strong> ${spot.severity}</p>
+              <p><em>${spot.question}</em></p>
              
-              <button class="rpg-btn" onclick="checkAnswer(${spot.id}, 0, ${spot.correct_index})">${spot.options[0]}</button>
-              <button class="rpg-btn" onclick="checkAnswer(${spot.id}, 1, ${spot.correct_index})">${spot.options[1]}</button>
-              <button class="rpg-btn" onclick="checkAnswer(${spot.id}, 2, ${spot.correct_index})">${spot.options[2]}</button>
-             
-              <p id="result-${spot.id}" style="color: #a8e6cf; font-size: 9px; margin-top: 10px;"></p>
+              <button onclick="checkAnswer(${spot.id}, 0, ${spot.correct_index})" style="margin: 2px;">${spot.options[0]}</button>
+              <button onclick="checkAnswer(${spot.id}, 1, ${spot.correct_index})" style="margin: 2px;">${spot.options[1]}</button>
+              <button onclick="checkAnswer(${spot.id}, 2, ${spot.correct_index})" style="margin: 2px;">${spot.options[2]}</button>
+              <p id="result-${spot.id}" style="color: blue; font-weight: bold; margin-top: 5px;"></p>
             </div>
           `;
           marker.bindPopup(popupContent);
@@ -182,7 +112,7 @@
       })
       .catch(error => console.error('Error loading hotspots:', error));
 
-    // --- Loose Trash Mini-Game ---
+    // --- Loose Trash Mini-Game (Click-to-Clean) ---
     const trashSprite = L.icon({
       iconUrl: 'trash.png',
       iconSize: [30, 30]
@@ -199,81 +129,64 @@
         map.removeLayer(trashMarker);
        
         const kubbleSpeech = document.getElementById('kubble-speech');
-        const kubbleSprite = document.getElementById('kubble-sprite');
-       
-        kubbleSpeech.innerText = "Snagged it! +20 XP";
-        kubbleSprite.src = "image_02bdfa.png"; // Happy Kubble[cite: 6]
-       
-        setTimeout(() => {
-           kubbleSprite.src = "image_02bdde.png"; // Back to Neutral Kubble
-        }, 1500);
+        kubbleSpeech.innerText = "Snagged it! The ocean is getting cleaner!";
       });
     }
 
     // --- Main Battle Logic ---
-    window.checkAnswer = function(spotId, selectedIndex, correctIndex) {
+    function checkAnswer(spotId, selectedIndex, correctIndex) {
       const resultText = document.getElementById(`result-${spotId}`);
       const kubbleSpeech = document.getElementById('kubble-speech');
-      const kubbleSprite = document.getElementById('kubble-sprite');
      
       if (selectedIndex === correctIndex) {
         playerScore += 100;
         let levelUpText = "";
 
-        kubbleSprite.src = "image_02bdfa.png"; // Happy Kubble[cite: 6]
-
         if (playerScore >= playerLevel * 300) {
           playerLevel++;
           playerHP = 100;
-          levelUpText = ` <br><br>🌟 LEVEL UP!`;
+          levelUpText = ` 🌟 LEVEL UP to Lv.${playerLevel}!`;
          
           document.getElementById('level-display').innerText = "👑 Level: " + playerLevel;
           document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
          
-          kubbleSpeech.innerText = `Level ${playerLevel}! Unstoppable!`;
-          levelUpSound.play().catch(e => console.log("Audio prevented"));
+          kubbleSpeech.innerText = `Whoa! Level ${playerLevel}! You're unstoppable!`;
+          levelUpSound.play();
         } else {
-          kubbleSpeech.innerText = "Aqua Blast! Direct hit!";
-          cheerSound.play().catch(e => console.log("Audio prevented"));
+          kubbleSpeech.innerText = "Great job! That's one less piece of trash!";
+          cheerSound.play();
         }
 
-        resultText.style.color = "#17b978";
-        resultText.innerHTML = "Correct!" + levelUpText;
+        resultText.style.color = "green";
+        resultText.innerText = "Correct! You cast Aqua Blast! 🌊" + levelUpText;
         document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
        
         setTimeout(() => {
           map.removeLayer(activeMarkers[spotId]);
-          kubbleSpeech.innerText = "Find the next monster!";
-          kubbleSprite.src = "image_02bdde.png"; // Back to Neutral
+          kubbleSpeech.innerText = "Keep it up! Find the next monster!";
         }, 2000);
        
       } else {
         playerHP -= 20;
         document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
        
-        kubbleSprite.src = "image_02be1a.png"; // Hurt Kubble[cite: 5]
-
         if (playerHP <= 0) {
-          resultText.style.color = "#ff8b94";
+          resultText.style.color = "red";
           resultText.innerText = "Game Over.";
-          kubbleSpeech.innerText = "Oh no... Let's try again!";
+          kubbleSpeech.innerText = "Oh no... the ocean needs a break. Let's try again!";
          
           setTimeout(() => {
-            alert("Game Over! Refresh to restart.");
+            alert("Game Over! Refresh the page to try again.");
             location.reload();
           }, 2000);
         } else {
-          resultText.style.color = "#ffcc00";
-          resultText.innerText = "-20 HP 💥";
-          kubbleSpeech.innerText = "Ouch! Watch out!";
-          ouchSound.play().catch(e => console.log("Audio prevented"));
-         
-          setTimeout(() => {
-            kubbleSprite.src = "image_02bdde.png"; // Back to Neutral
-          }, 2000);
+          resultText.style.color = "orange";
+          resultText.innerText = "Wrong! The monster attacks! -20 HP 💥";
+          kubbleSpeech.innerText = "Ouch! Watch out for their pollution attacks!";
+          ouchSound.play();
         }
       }
-    };
+    }
 
     // --- IRL Sidequest Logic ---
     document.getElementById('trash-upload').addEventListener('change', function(event) {
@@ -282,19 +195,11 @@
         document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
        
         const kubbleSpeech = document.getElementById('kubble-speech');
-        const kubbleSprite = document.getElementById('kubble-sprite');
+        kubbleSpeech.innerText = "AMAZING! You are a real-world hero! +500 POINTS!";
+        cheerSound.play();
        
-        kubbleSpeech.innerText = "IRL HERO! +500 POINTS!";
-        kubbleSprite.src = "image_02bdfa.png"; // Happy Kubble[cite: 6]
-        cheerSound.play().catch(e => console.log("Audio prevented"));
-       
-        alert("Hero detected! 500 bonus points awarded!");
+        alert("Hero detected! 500 bonus points awarded for cleaning up the real world!");
         event.target.value = "";
-       
-        setTimeout(() => {
-           kubbleSprite.src = "image_02bdde.png"; // Back to Neutral
-           kubbleSpeech.innerText = "Click a monster to battle!";
-        }, 3000);
       }
     });
   </script>
