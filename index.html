@@ -1,71 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ocean Pollution Tracker</title>
-   
-    <!-- 1. Load Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-   
-    <!-- 2. Set up basic styling for a full-screen map -->
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
-        }
-        /* The map container MUST have a defined height */
-        #map {
-            height: 100vh;
-            width: 100vw;
-        }
-        /* Optional: A simple UI overlay for your game/dashboard */
-        .ui-overlay {
-            position: absolute;
-            top: 20px;
-            left: 50px;
-            z-index: 1000; /* Keeps it above the map */
-            background: rgba(255, 255, 255, 0.9);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-    </style>
+  <title>AquaQuest</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ 
+  <!-- Leaflet CSS and JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+ 
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { width: 100vw; height: 100vh; }
+  </style>
 </head>
 <body>
 
-    <!-- UI Overlay for the user -->
-    <div class="ui-overlay">
-        <h2>EcoTracker RPG</h2>
-        <p>Find and clean pollution hotspots!</p>
-    </div>
+  <!-- Score UI -->
+  <div id="score-display" style="
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background-color: white;
+    border: 4px solid black;
+    padding: 10px 20px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 4px 4px 0px grey;
+  ">Score: 0</div>
 
-    <!-- 3. Create the container where the map will render -->
-    <div id="map"></div>
+  <!-- Map Container -->
+  <div id="map"></div>
 
-    <!-- 4. Load Leaflet JavaScript (Must be loaded AFTER Leaflet CSS) -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    // 1. Set up the score and the map (zoomed out to see the whole country)
+    let playerScore = 0;
+    const map = L.map('map').setView([39.8283, -98.5795], 4);
 
-    <!-- 5. Initialize the Map and Data -->
-    <script>
-        // Initialize the map and set the starting coordinates (Latitude, Longitude) and zoom level
-        // [20, 0] centers roughly on the Atlantic Ocean. Zoom level 2 shows the whole world.
-        const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
 
-        // Add the base map tiles (the actual imagery). We are using free OpenStreetMap tiles.
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
+    // 2. Define your custom pixel-art monster sprite
+    const monsterSprite = L.icon({
+      iconUrl: 'monster.png', // Be sure your image is actually named monster.png in your repo!
+      iconSize: [40, 40],
+      iconAnchor: [20, 40],
+      popupAnchor: [0, -40]
+    });
 
-        // --- HACKATHON NEXT STEPS ---
-        // Below is an example of adding a single hardcoded marker.
-        // Later, you will replace this with a fetch() function that reads your AI's 'hotspots.json' file.
+    // Keep track of active markers to delete them later
+    const activeMarkers = {};
+
+    // 3. Fetch the generated AI data
+    fetch('hotspots.json')
+      .then(response => response.json())
+      .then(data => {
+        data.forEach(spot => {
+          // Add a marker using your custom sprite
+          const marker = L.marker([spot.lat, spot.lng], {icon: monsterSprite}).addTo(map);
+          activeMarkers[spot.id] = marker;
+
+          // Build the retro trivia popup
+          const popupContent = `
+            <div style="font-family: 'Courier New', Courier, monospace; text-align: center;">
+              <h3 style="color: red;">Wild ${spot.type} appeared!</h3>
+              <p><strong>Severity:</strong> ${spot.severity}</p>
+              <p><em>${spot.question}</em></p>
+             
+              <button onclick="checkAnswer(${spot.id}, 0, ${spot.correct_index})" style="margin: 2px;">${spot.options[0]}</button>
+              <button onclick="checkAnswer(${spot.id}, 1, ${spot.correct_index})" style="margin: 2px;">${spot.options[1]}</button>
+              <button onclick="checkAnswer(${spot.id}, 2, ${spot.correct_index})" style="margin: 2px;">${spot.options[2]}</button>
+              <p id="result-${spot.id}" style="color: blue; font-weight: bold; margin-top: 5px;"></p>
+            </div>
+          `;
+
+          marker.bindPopup(popupContent);
+        });
+      })
+      .catch(error => console.error('Error loading hotspots:', error));
+
+    // 4. Game Logic: Checking answers and updating score
+    function checkAnswer(spotId, selectedIndex, correctIndex) {
+      const resultText = document.getElementById(`result-${spotId}`);
+     
+      if (selectedIndex === correctIndex) {
+        resultText.style.color = "green";
+        resultText.innerText = "Super Effective! Monster Defeated!";
        
-        const testMarker = L.marker([25.0, -71.0]).addTo(map);
-        testMarker.bindPopup("<b>High Risk Zone</b><br>Estimated 500kg of plastic waste.");
-    </script>
+        // Add XP and update the on-screen score UI
+        playerScore += 100;
+        document.getElementById('score-display').innerText = "Score: " + playerScore;
+       
+        // Wait 1 second, then remove the monster from the map
+        setTimeout(() => {
+          map.removeLayer(activeMarkers[spotId]);
+        }, 1000);
+       
+      } else {
+        resultText.style.color = "red";
+        resultText.innerText = "Not very effective... Try again!";
+      }
+    }
+  </script>
 </body>
 </html>
