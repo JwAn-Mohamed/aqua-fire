@@ -10,100 +10,91 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
  
   <style>
-    body { margin: 0; padding: 0; }
+    body { margin: 0; padding: 0; overflow: hidden; }
     #map { width: 100vw; height: 100vh; }
   </style>
 </head>
 <body>
 
- <!-- RPG Dashboard UI -->
+  <!-- 1. RPG Dashboard UI -->
   <div id="rpg-dashboard" style="
     position: absolute; top: 20px; right: 20px; z-index: 1000;
     background-color: #222; color: white; border: 4px solid #fff;
     padding: 10px 20px; font-family: 'Courier New', Courier, monospace;
     font-size: 20px; font-weight: bold; border-radius: 8px; box-shadow: 4px 4px 0px #000;
   ">
+    <div id="level-display" style="color: #ffd700; margin-bottom: 5px;">👑 Level: 1</div>
     <div id="hp-display" style="color: #ff4d4d; margin-bottom: 5px;">❤️ HP: 100</div>
     <div id="score-display" style="color: #4da6ff;">⭐ Score: 0</div>
+  </div>
+
+  <!-- 2. Real-Life Sidequest UI -->
+  <div id="irl-quest" style="
+    position: absolute; bottom: 130px; left: 20px; z-index: 1000;
+  ">
+    <label for="trash-upload" style="
+      background-color: #ffcc00; color: black; padding: 10px 15px;
+      border: 3px solid black; border-radius: 8px; font-family: 'Courier New', Courier, monospace;
+      font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 4px 4px 0px #000;
+    ">
+      📸 Upload IRL Cleanup! (+500 pts)
+    </label>
+    <input type="file" id="trash-upload" accept="image/*" capture="environment" style="display: none;">
+  </div>
+
+  <!-- 3. Kubble Companion UI -->
+  <div id="kubble-container" style="
+    position: absolute; bottom: 20px; left: 20px; z-index: 1000;
+    display: flex; align-items: flex-end; gap: 10px;
+  ">
+    <div id="kubble-speech" style="
+      background-color: white; border: 3px solid #000; border-radius: 15px;
+      padding: 12px 15px; font-family: 'Courier New', Courier, monospace;
+      font-size: 16px; font-weight: bold; max-width: 220px;
+      box-shadow: 4px 4px 0px #888; margin-bottom: 30px;
+    ">
+      Let's clean up the ocean! Click a monster to battle!
+    </div>
+    <img src="kubble.png" alt="Kubble" style="width: 80px; height: 80px; image-rendering: pixelated;">
   </div>
 
   <!-- Map Container -->
   <div id="map"></div>
 
   <script>
-    // 1. Set up the score and the map (zoomed out to see the whole country)
-   // RPG Stats
+    // --- RPG Stats & Audio Setup ---
     let playerScore = 0;
     let playerHP = 100;
     let playerLevel = 1;
 
-    // Sound files and such
     const cheerSound = new Audio('cheer.mp3');
-    const thinkSound = new Audio('think.mp3');
+    const ouchSound = new Audio('ouch.mp3');
     const levelUpSound = new Audio('levelup.mp3');
 
-    // RPG Battle Logic
-    function checkAnswer(spotId, selectedIndex, correctIndex) {
-      const resultText = document.getElementById(`result-${spotId}`);
-     
-      if (selectedIndex === correctIndex) {
-        // PRODIGY WIN STATE: Player attacks!
-        resultText.style.color = "green";
-        resultText.innerText = "Correct! You cast Aqua Blast! 🌊 Monster Defeated!";
-       
-        playerScore += 100;
-        document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
-       
-        setTimeout(() => {
-          map.removeLayer(activeMarkers[spotId]);
-        }, 1500);
-       
-      } else {
-        // PRODIGY LOSE STATE: Monster attacks!
-        playerHP -= 20;
-        document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
-       
-        if (playerHP <= 0) {
-          resultText.style.color = "red";
-          resultText.innerText = "Oh no! The pollution overpowered you! Game Over.";
-          setTimeout(() => {
-            alert("Game Over! Refresh the page to try again.");
-            location.reload(); // Restarts the game
-          }, 1500);
-        } else {
-          resultText.style.color = "orange";
-          resultText.innerText = "Wrong! The monster attacks! -20 HP 💥";
-        }
-      }
-    }
+    // --- Map Setup ---
     const map = L.map('map').setView([39.8283, -98.5795], 4);
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // 2. Define your custom pixel-art monster sprite
     const monsterSprite = L.icon({
-      iconUrl: 'monster.png', // Be sure your image is actually named monster.png in your repo!
+      iconUrl: 'monster.png',
       iconSize: [40, 40],
       iconAnchor: [20, 40],
       popupAnchor: [0, -40]
     });
-
-    // Keep track of active markers to delete them later
+   
     const activeMarkers = {};
 
-    // 3. Fetch the generated AI data
+    // --- Fetch Monsters (from hotspots.json) ---
     fetch('hotspots.json')
       .then(response => response.json())
       .then(data => {
         data.forEach(spot => {
-          // Add a marker using your custom sprite
           const marker = L.marker([spot.lat, spot.lng], {icon: monsterSprite}).addTo(map);
           activeMarkers[spot.id] = marker;
 
-          // Build the retro trivia popup
           const popupContent = `
             <div style="font-family: 'Courier New', Courier, monospace; text-align: center;">
               <h3 style="color: red;">Wild ${spot.type} appeared!</h3>
@@ -116,34 +107,101 @@
               <p id="result-${spot.id}" style="color: blue; font-weight: bold; margin-top: 5px;"></p>
             </div>
           `;
-
           marker.bindPopup(popupContent);
         });
       })
       .catch(error => console.error('Error loading hotspots:', error));
 
-    // 4. Game Logic: Checking answers and updating score
+    // --- Loose Trash Mini-Game (Click-to-Clean) ---
+    const trashSprite = L.icon({
+      iconUrl: 'trash.png',
+      iconSize: [30, 30]
+    });
+
+    for (let i = 0; i < 40; i++) {
+      let randomLat = 25 + (Math.random() * 23);
+      let randomLng = -125 + (Math.random() * 55);
+      let trashMarker = L.marker([randomLat, randomLng], {icon: trashSprite}).addTo(map);
+     
+      trashMarker.on('click', function() {
+        playerScore += 20;
+        document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
+        map.removeLayer(trashMarker);
+       
+        const kubbleSpeech = document.getElementById('kubble-speech');
+        kubbleSpeech.innerText = "Snagged it! The ocean is getting cleaner!";
+      });
+    }
+
+    // --- Main Battle Logic ---
     function checkAnswer(spotId, selectedIndex, correctIndex) {
       const resultText = document.getElementById(`result-${spotId}`);
+      const kubbleSpeech = document.getElementById('kubble-speech');
      
       if (selectedIndex === correctIndex) {
-        resultText.style.color = "green";
-        resultText.innerText = "Super Effective! Monster Defeated!";
-       
-        // Add XP and update the on-screen score UI
         playerScore += 100;
-        document.getElementById('score-display').innerText = "Score: " + playerScore;
+        let levelUpText = "";
+
+        if (playerScore >= playerLevel * 300) {
+          playerLevel++;
+          playerHP = 100;
+          levelUpText = ` 🌟 LEVEL UP to Lv.${playerLevel}!`;
+         
+          document.getElementById('level-display').innerText = "👑 Level: " + playerLevel;
+          document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
+         
+          kubbleSpeech.innerText = `Whoa! Level ${playerLevel}! You're unstoppable!`;
+          levelUpSound.play();
+        } else {
+          kubbleSpeech.innerText = "Great job! That's one less piece of trash!";
+          cheerSound.play();
+        }
+
+        resultText.style.color = "green";
+        resultText.innerText = "Correct! You cast Aqua Blast! 🌊" + levelUpText;
+        document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
        
-        // Wait 1 second, then remove the monster from the map
         setTimeout(() => {
           map.removeLayer(activeMarkers[spotId]);
-        }, 1000);
+          kubbleSpeech.innerText = "Keep it up! Find the next monster!";
+        }, 2000);
        
       } else {
-        resultText.style.color = "red";
-        resultText.innerText = "Not very effective... Try again!";
+        playerHP -= 20;
+        document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
+       
+        if (playerHP <= 0) {
+          resultText.style.color = "red";
+          resultText.innerText = "Game Over.";
+          kubbleSpeech.innerText = "Oh no... the ocean needs a break. Let's try again!";
+         
+          setTimeout(() => {
+            alert("Game Over! Refresh the page to try again.");
+            location.reload();
+          }, 2000);
+        } else {
+          resultText.style.color = "orange";
+          resultText.innerText = "Wrong! The monster attacks! -20 HP 💥";
+          kubbleSpeech.innerText = "Ouch! Watch out for their pollution attacks!";
+          ouchSound.play();
+        }
       }
     }
+
+    // --- IRL Sidequest Logic ---
+    document.getElementById('trash-upload').addEventListener('change', function(event) {
+      if (event.target.files.length > 0) {
+        playerScore += 500;
+        document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
+       
+        const kubbleSpeech = document.getElementById('kubble-speech');
+        kubbleSpeech.innerText = "AMAZING! You are a real-world hero! +500 POINTS!";
+        cheerSound.play();
+       
+        alert("Hero detected! 500 bonus points awarded for cleaning up the real world!");
+        event.target.value = "";
+      }
+    });
   </script>
 </body>
 </html>
