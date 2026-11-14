@@ -16,20 +16,16 @@
 </head>
 <body>
 
-  <!-- Score UI -->
-  <div id="score-display" style="
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
-    background-color: white;
-    border: 4px solid black;
-    padding: 10px 20px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 24px;
-    font-weight: bold;
-    box-shadow: 4px 4px 0px grey;
-  ">Score: 0</div>
+ <!-- RPG Dashboard UI -->
+  <div id="rpg-dashboard" style="
+    position: absolute; top: 20px; right: 20px; z-index: 1000;
+    background-color: #222; color: white; border: 4px solid #fff;
+    padding: 10px 20px; font-family: 'Courier New', Courier, monospace;
+    font-size: 20px; font-weight: bold; border-radius: 8px; box-shadow: 4px 4px 0px #000;
+  ">
+    <div id="hp-display" style="color: #ff4d4d; margin-bottom: 5px;">❤️ HP: 100</div>
+    <div id="score-display" style="color: #4da6ff;">⭐ Score: 0</div>
+  </div>
 
   <!-- Map Container -->
   <div id="map"></div>
