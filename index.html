@@ -28,10 +28,19 @@
     <div id="score-display" style="color: #4da6ff;">⭐ Score: 0</div>
   </div>
 
-  <!-- 2. Real-Life Sidequest UI -->
+<!-- Real-Life Sidequest UI -->
   <div id="irl-quest" style="
-    position: absolute; bottom: 130px; left: 20px; z-index: 1000;
+    position: absolute; bottom: 20px; right: 20px; z-index: 1000;
   ">
+    <label for="trash-upload" style="
+      background-color: #17b978; color: white; padding: 12px 18px;
+      border: 3px solid #0b3c5d; border-radius: 8px; font-family: 'Courier New', Courier, monospace;
+      font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 4px 4px 0px #000;
+    ">
+      📸 Upload IRL Cleanup! (+500 pts)
+    </label>
+    <input type="file" id="trash-upload" accept="image/*" capture="environment" style="display: none;">
+  </div>
     <label for="trash-upload" style="
       background-color: #ffcc00; color: black; padding: 10px 15px;
       border: 3px solid black; border-radius: 8px; font-family: 'Courier New', Courier, monospace;
@@ -74,26 +83,87 @@
     const ouchSound = new Audio('ouch.mp3');
     const levelUpSound = new Audio('levelup.mp3');
     
-function triggerKubbleReaction(soundType) {
-  const kubbleSprite = document.getElementById('kubble-sprite');
-  
-  if (soundType === "cheer") {
-    cheerSound.play().catch(e => console.log("Audio prevented"));
-    kubbleSprite.src = "Kubble-happy.png";
-  }
-  else if (soundType === "ouch") {
-    ouchSound.play().catch(e => console.log("Audio prevented"));
-    kubbleSprite.src = "Kubble-hurt.png";
-  }
-  else if (soundType === "levelup") {
-    levelUpSound.play().catch(e => console.log("Audio prevented"));
-    kubbleSprite.src = "Kubble-happy.png";
-  }
-  else {
-    kubbleSprite.src = "kubble.png"
-  }
-}
-    
+// --- Main Battle Logic with Clean Triggers ---
+    window.checkAnswer = function(spotId, selectedIndex, correctIndex) {
+      const resultText = document.getElementById(`result-${spotId}`);
+      const kubbleSpeech = document.getElementById('kubble-speech');
+     
+      if (selectedIndex === correctIndex) {
+        playerScore += 100;
+        let levelUpText = "";
+
+        if (playerScore >= playerLevel * 300) {
+          playerLevel++;
+          playerHP = 100;
+          levelUpText = ` <br>🌟 LEVEL UP to Lv.${playerLevel}!`;
+         
+          document.getElementById('level-display').innerText = "👑 Level: " + playerLevel;
+          document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
+         
+          kubbleSpeech.innerText = `Whoa! Level ${playerLevel}! You're unstoppable!`;
+          triggerKubbleReaction("levelup"); // <-- NEW CLEAN TRIGGER
+        } else {
+          kubbleSpeech.innerText = "Great job! That's one less piece of trash!";
+          triggerKubbleReaction("cheer"); // <-- NEW CLEAN TRIGGER
+        }
+
+        resultText.style.color = "#17b978";
+        resultText.innerHTML = "Correct! You cast Aqua Blast! 🌊" + levelUpText;
+        document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
+       
+        setTimeout(() => {
+          map.removeLayer(activeMarkers[spotId]);
+          kubbleSpeech.innerText = "Keep it up! Find the next monster!";
+          triggerKubbleReaction("neutral"); // <-- NEW CLEAN TRIGGER
+        }, 2000);
+       
+      } else {
+        playerHP -= 20;
+        document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
+       
+        triggerKubbleReaction("ouch"); // <-- NEW CLEAN TRIGGER
+
+        if (playerHP <= 0) {
+          resultText.style.color = "red";
+          resultText.innerText = "Game Over.";
+          kubbleSpeech.innerText = "Oh no... the ocean needs a break. Let's try again!";
+         
+          setTimeout(() => {
+            alert("Game Over! Refresh the page to try again.");
+            location.reload();
+          }, 2000);
+        } else {
+          resultText.style.color = "orange";
+          resultText.innerText = "Wrong! The monster attacks! -20 HP 💥";
+          kubbleSpeech.innerText = "Ouch! Watch out for their pollution attacks!";
+         
+          setTimeout(() => {
+            triggerKubbleReaction("neutral"); // <-- NEW CLEAN TRIGGER
+          }, 2000);
+        }
+      }
+    };
+
+    // --- IRL Sidequest Logic with Clean Triggers ---
+    document.getElementById('trash-upload').addEventListener('change', function(event) {
+      if (event.target.files.length > 0) {
+        playerScore += 500;
+        document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
+       
+        const kubbleSpeech = document.getElementById('kubble-speech');
+       
+        kubbleSpeech.innerText = "AMAZING! You are a real-world hero! +500 POINTS!";
+        triggerKubbleReaction("cheer"); // <-- NEW CLEAN TRIGGER
+       
+        alert("Hero detected! 500 bonus points awarded for cleaning up the real world!");
+        event.target.value = "";
+       
+        setTimeout(() => {
+           triggerKubbleReaction("neutral"); // <-- NEW CLEAN TRIGGER
+           kubbleSpeech.innerText = "Let's clean up the ocean! Click a monster to battle!";
+        }, 3000);
+      }
+    });
 
     // --- Map Setup ---
     const map = L.map('map').setView([39.8283, -98.5795], 4);
