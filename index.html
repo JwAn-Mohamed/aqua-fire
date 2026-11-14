@@ -32,7 +32,50 @@
 
   <script>
     // 1. Set up the score and the map (zoomed out to see the whole country)
+   // RPG Stats
     let playerScore = 0;
+    let playerHP = 100;
+    let playerLevel = 1;
+
+    // Sound files and such
+    const cheerSound = new Audio('cheer.mp3');
+    const thinkSound = new Audio('think.mp3');
+    const levelUpSound = new Audio('levelup.mp3');
+
+    // RPG Battle Logic
+    function checkAnswer(spotId, selectedIndex, correctIndex) {
+      const resultText = document.getElementById(`result-${spotId}`);
+     
+      if (selectedIndex === correctIndex) {
+        // PRODIGY WIN STATE: Player attacks!
+        resultText.style.color = "green";
+        resultText.innerText = "Correct! You cast Aqua Blast! 🌊 Monster Defeated!";
+       
+        playerScore += 100;
+        document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
+       
+        setTimeout(() => {
+          map.removeLayer(activeMarkers[spotId]);
+        }, 1500);
+       
+      } else {
+        // PRODIGY LOSE STATE: Monster attacks!
+        playerHP -= 20;
+        document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
+       
+        if (playerHP <= 0) {
+          resultText.style.color = "red";
+          resultText.innerText = "Oh no! The pollution overpowered you! Game Over.";
+          setTimeout(() => {
+            alert("Game Over! Refresh the page to try again.");
+            location.reload(); // Restarts the game
+          }, 1500);
+        } else {
+          resultText.style.color = "orange";
+          resultText.innerText = "Wrong! The monster attacks! -20 HP 💥";
+        }
+      }
+    }
     const map = L.map('map').setView([39.8283, -98.5795], 4);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
