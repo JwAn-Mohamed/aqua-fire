@@ -71,6 +71,8 @@
     const ouchSound = new Audio('ouch.mp3');
     const levelUpSound = new Audio('levelup.mp3');
 
+    
+
     // --- Map Setup ---
     const map = L.map('map').setView([39.8283, -98.5795], 4);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -114,7 +116,7 @@
 
     // --- Loose Trash Mini-Game (Click-to-Clean) ---
     const trashSprite = L.icon({
-      iconUrl: 'trash.png',
+      iconUrl: 'trash.jpg',
       iconSize: [30, 30]
     });
 
