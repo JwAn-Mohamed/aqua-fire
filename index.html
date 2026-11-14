@@ -45,19 +45,22 @@
   <!-- 3. Kubble Companion UI -->
   <div id="kubble-container" style="
     position: absolute; bottom: 20px; left: 20px; z-index: 1000;
-    display: flex; align-items: flex-end; gap: 10px;
+    display: flex; align-items: flex-end; gap: 20px;
   ">
     <div id="kubble-speech" style="
-      background-color: white; border: 3px solid #000; border-radius: 15px;
-      padding: 12px 15px; font-family: 'Courier New', Courier, monospace;
-      font-size: 16px; font-weight: bold; max-width: 220px;
-      box-shadow: 4px 4px 0px #888; margin-bottom: 30px;
+      background-color: white; border: 4px solid #0b3c5d; border-radius: 10px; color: #0b3c5d;
+      padding: 20px 25px; font-family: 'Courier New', Courier, monospace;
+      font-size: 24px; font-weight: bold; max-width: 400px;
+      box-shadow: 4px 4px 0px #0b3c5d; margin-bottom: 80px;
     ">
       Let's clean up the ocean! Click a monster to battle!
-    </div>
-    <img src="kubble.png" alt="Kubble" style="width: 80px; height: 80px; image-rendering: pixelated;">
+    <div style="
+      position: absolute; right: -15px; bottom: 25px;
+      width: 0; height: 0;
+    "></div>
   </div>
-
+ <img src="kubble.png" src="Kubble-happy.png" alt="Kubble" style="width: 250px; height: auto; image-rendering: pixelated; filter: drop-shadow(4px 4px 0px rgba(0,0,0,0,3));">
+  </div>
   <!-- Map Container -->
   <div id="map"></div>
 
@@ -70,7 +73,26 @@
     const cheerSound = new Audio('cheer.mp3');
     const ouchSound = new Audio('ouch.mp3');
     const levelUpSound = new Audio('levelup.mp3');
-
+    
+function triggerKubbleReaction(soundType) {
+  const kubbleSprite = document.getElementById('kubble-sprite');
+  
+  if (soundType === "cheer") {
+    cheerSound.play().catch(e => console.log("Audio prevented"));
+    kubbleSprite.src = "Kubble-happy.png";
+  }
+  else if (soundType === "ouch") {
+    ouchSound.play().catch(e => console.log("Audio prevented"));
+    kubbleSprite.src = "Kubble-hurt.png";
+  }
+  else if (soundType === "levelup") {
+    levelUpSound.play().catch(e => console.log("Audio prevented"));
+    kubbleSprite.src = "Kubble-happy.png";
+  }
+  else {
+    kubbleSprite.src = "kubble.png"
+  }
+}
     
 
     // --- Map Setup ---
