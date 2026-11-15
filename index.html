@@ -49,9 +49,9 @@
 
   <script>
     // ==========================================
-    // 🔑 API KEY SETUP (Paste once here!)
+    // 🔑 API KEY SETUP (Active Local Key)
     // ==========================================
-    const GLOBAL_API_KEY = "AQ.Ab8RN6IR1BZ91oJtA3kRwxM51seo6VzVGEsLKiQOPb47qCUTVQ"; 
+    const GLOBAL_API_KEY = "AQ.Ab8RN6LO4G_VqgEKBORdsBBYKRZ9BTf_UzjGTVRXfQV6eBBI4Q"; 
 
     // --- Stats & Audio ---
     let playerScore = 0;
@@ -132,7 +132,6 @@
     const severities = ["Low", "Medium", "High", "Critical"];
 
     setInterval(() => {
-      // Generate random coordinates to scatter them across the map
       const randomLat = 20 + (Math.random() * 30);
       const randomLng = -125 + (Math.random() * 60);
       
@@ -140,7 +139,7 @@
       const randomSeverity = severities[Math.floor(Math.random() * severities.length)];
 
       spawnAIMonster(randomLat, randomLng, randomName, randomSeverity);
-    }, 12000); // Spawns a new monster every 12 seconds
+    }, 12000); 
 
     const trashSprite = L.icon({ iconUrl: 'trash.jpg', iconSize: [30, 30] });
     for (let i = 0; i < 40; i++) {
