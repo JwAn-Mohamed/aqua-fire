@@ -5,15 +5,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Leaflet CSS and JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <style>
     body { margin: 0; padding: 0; overflow: hidden; background-color: #0a1f2d; }
     #map { width: 100vw; height: 100vh; }
-    
-    /* Pixelated map with a blue/green ocean tint */
     .leaflet-tile {
       image-rendering: pixelated;
       filter: sepia(0.2) hue-rotate(160deg) saturate(2) contrast(1.2);
@@ -22,79 +19,41 @@
 </head>
 <body>
 
-  <!-- You Win! Screen Overlay (Hidden by Default) -->
-  <div id="win-screen" style="
-    display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background-color: rgba(10, 31, 45, 0.9); z-index: 9999;
-    flex-direction: column; justify-content: center; align-items: center;
-    font-family: 'Courier New', Courier, monospace; color: white; text-align: center;
-  ">
+  <div id="win-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(10, 31, 45, 0.9); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; font-family: 'Courier New', Courier, monospace; color: white; text-align: center;">
     <h1 style="font-size: 60px; color: #17b978; margin-bottom: 10px; text-shadow: 4px 4px 0px #0b3c5d;">YOU SAVED THE OCEAN!</h1>
-    <p style="font-size: 24px; color: #a8e6cf; margin-bottom: 30px;">Kubble is proud of you!</p>
     <div id="final-score-display" style="font-size: 30px; color: #ffcc00; font-weight: bold; margin-bottom: 40px;"></div>
-    <button onclick="location.reload()" style="
-      background-color: #17b978; color: white; border: 4px solid #0b3c5d; border-radius: 8px;
-      padding: 15px 30px; font-size: 24px; font-weight: bold; cursor: pointer;
-      font-family: 'Courier New', Courier, monospace; box-shadow: 4px 4px 0px #000;
-    ">Play Again</button>
+    <button onclick="location.reload()" style="background-color: #17b978; color: white; border: 4px solid #0b3c5d; border-radius: 8px; padding: 15px 30px; font-size: 24px; font-weight: bold; cursor: pointer; font-family: 'Courier New', Courier, monospace; box-shadow: 4px 4px 0px #000;">Play Again</button>
   </div>
 
-  <!-- RPG Dashboard UI (Top Right) -->
-  <div id="rpg-dashboard" style="
-    position: absolute; top: 20px; right: 20px; z-index: 1000;
-    background-color: #0b3c5d; color: white; border: 4px solid #3282b8;
-    padding: 10px 20px; font-family: 'Courier New', Courier, monospace;
-    font-size: 20px; font-weight: bold; border-radius: 8px; box-shadow: 4px 4px 0px #000;
-  ">
+  <div id="rpg-dashboard" style="position: absolute; top: 20px; right: 20px; z-index: 1000; background-color: #0b3c5d; color: white; border: 4px solid #3282b8; padding: 10px 20px; font-family: 'Courier New', Courier, monospace; font-size: 20px; font-weight: bold; border-radius: 8px; box-shadow: 4px 4px 0px #000;">
     <div id="level-display" style="color: #a8e6cf; margin-bottom: 5px;">👑 Level: 1</div>
     <div id="hp-display" style="color: #ff8b94; margin-bottom: 5px;">❤️ HP: 100</div>
     <div id="score-display" style="color: #dcedc1;">⭐ Score: 0</div>
   </div>
 
-  <!-- Real-Life Sidequest UI (Moved to Bottom Right) -->
-  <div id="irl-quest" style="
-    position: absolute; bottom: 20px; right: 20px; z-index: 1000;
-  ">
-    <label for="trash-upload" style="
-      background-color: #17b978; color: white; padding: 12px 18px; 
-      border: 3px solid #0b3c5d; border-radius: 8px; font-family: 'Courier New', Courier, monospace; 
-      font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 4px 4px 0px #000;
-    ">
+  <div id="irl-quest" style="position: absolute; bottom: 20px; right: 20px; z-index: 1000;">
+    <label for="trash-upload" style="background-color: #17b978; color: white; padding: 12px 18px; border: 3px solid #0b3c5d; border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 4px 4px 0px #000;">
       📸 Upload IRL Cleanup! (+500 pts)
     </label>
     <input type="file" id="trash-upload" accept="image/*" capture="environment" style="display: none;">
   </div>
 
-  <!-- Kubble Companion UI (Moved to Bottom Left, Bigger Sprite) -->
-  <div id="kubble-container" style="
-    position: absolute; bottom: 20px; left: 20px; z-index: 1000;
-    display: flex; align-items: flex-end; gap: 20px;
-  ">
-    <div id="kubble-speech" style="
-      background-color: #e8f4f8; border: 4px solid #0b3c5d; border-radius: 10px; color: #0b3c5d;
-      padding: 20px 25px; font-family: 'Courier New', Courier, monospace;
-      font-size: 24px; font-weight: bold; max-width: 400px;
-      box-shadow: 4px 4px 0px #0b3c5d; margin-bottom: 80px;
-      position: relative;
-    ">
-      Let's clean up the ocean! Click a monster or the map!
-      <div style="
-        position: absolute; right: -15px; bottom: 25px;
-        width: 0; height: 0;
-        border-top: 10px solid transparent;
-        border-bottom: 10px solid transparent;
-        border-left: 15px solid #0b3c5d;
-      "></div>
+  <div id="kubble-container" style="position: absolute; bottom: 20px; left: 20px; z-index: 1000; display: flex; align-items: flex-end; gap: 20px;">
+    <div id="kubble-speech" style="background-color: #e8f4f8; border: 4px solid #0b3c5d; border-radius: 10px; color: #0b3c5d; padding: 20px 25px; font-family: 'Courier New', Courier, monospace; font-size: 24px; font-weight: bold; max-width: 400px; box-shadow: 4px 4px 0px #0b3c5d; margin-bottom: 80px; position: relative;">
+      Let's clean up the ocean! Click the map to find monsters!
     </div>
-    <!-- Source is lowercase kubble.png -->
     <img id="kubble-sprite" src="kubble.png" alt="Kubble" style="width: 250px; height: auto; image-rendering: pixelated; filter: drop-shadow(4px 4px 0px rgba(0,0,0,0.3));">
   </div>
 
-  <!-- Map Container -->
   <div id="map"></div>
 
   <script>
-    // --- RPG Stats & Audio Setup ---
+    // ==========================================
+    // 🔑 API KEY SETUP (Paste once here!)
+    // ==========================================
+    const GLOBAL_API_KEY = "YOUR_API_KEY_HERE"; 
+
+    // --- Stats & Audio ---
     let playerScore = 0;
     let playerHP = 100;
     let playerLevel = 1;
@@ -103,51 +62,24 @@
     const ouchSound = new Audio('ouch.mp3');
     const levelUpSound = new Audio('levelup.mp3');
 
-    // --- Audio & Sprite Controller ---
     function triggerKubbleReaction(soundType) {
       const kubbleSprite = document.getElementById('kubble-sprite');
-
-      if (soundType === "cheer") {
-        cheerSound.play().catch(e => console.log("Audio prevented"));
-        kubbleSprite.src = "Kubble-happy.png";
-      } 
-      else if (soundType === "ouch") {
-        ouchSound.play().catch(e => console.log("Audio prevented"));
-        kubbleSprite.src = "Kubble-hurt.png";
-      } 
-      else if (soundType === "levelup") {
-        levelUpSound.play().catch(e => console.log("Audio prevented"));
-        kubbleSprite.src = "Kubble-happy.png";
-      } 
-      else {
-        kubbleSprite.src = "kubble.png";
-      }
+      if (soundType === "cheer") { cheerSound.play().catch(e=>e); kubbleSprite.src = "Kubble-happy.png"; } 
+      else if (soundType === "ouch") { ouchSound.play().catch(e=>e); kubbleSprite.src = "Kubble-hurt.png"; } 
+      else if (soundType === "levelup") { levelUpSound.play().catch(e=>e); kubbleSprite.src = "Kubble-happy.png"; } 
+      else { kubbleSprite.src = "kubble.png"; }
     }
 
     // --- Map Setup ---
     const map = L.map('map').setView([39.8283, -98.5795], 4);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
     
-    // --- Original Monster Sprite ---
-    const monsterSprite = L.icon({
-      iconUrl: 'monster.png', 
-      iconSize: [40, 40],
-      iconAnchor: [20, 40],
-      popupAnchor: [0, -40]
-    });
-
+    const monsterSprite = L.icon({ iconUrl: 'monster.png', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
     const activeMarkers = {};
 
-  // --- Dynamic AI Monster Generator ---
+    // --- AI Trivia Generation ---
     async function spawnAIMonster(lat, lng, monsterType, severityLevel) {
-      // Make sure your real API key is here!
-      const apiKey = "AQ.Ab8RN6JkeEobtiqLEhyutcYoMgB_MvIK3WdiP6vt-G6_Th73Uw"; 
       const spotId = Math.floor(Math.random() * 100000);
-      
-      // 1. SPAWN THE MONSTER IMMEDIATELY
       const marker = L.marker([lat, lng], {icon: monsterSprite}).addTo(map);
       activeMarkers[spotId] = marker;
       marker.bindPopup(`<div style="text-align:center; color:#0b3c5d; font-family: 'Courier New', Courier, monospace;"><b>Generating AI trivia... ⏳</b></div>`);
@@ -162,179 +94,144 @@
       }`;
 
       try {
-        // 2. ASK THE AI FOR THE QUESTION
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GLOBAL_API_KEY}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
-
         const data = await response.json();
         
-        // Check if the API returned an error (like a bad key)
-        if (data.error) {
-          throw new Error(data.error.message);
-        }
+        if (data.error) throw new Error(data.error.message);
         
-        let rawText = data.candidates[0].content.parts[0].text;
-        let cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+        let cleanJson = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
         const trivia = JSON.parse(cleanJson);
         
-        // 3. UPDATE THE POPUP WITH THE AI QUESTION
-        const popupContent = `
+        marker.setPopupContent(`
           <div style="font-family: 'Courier New', Courier, monospace; text-align: center; color: #0b3c5d;">
             <h3 style="color: #17b978;">Wild ${monsterType} appeared!</h3>
             <p><strong>Severity:</strong> ${severityLevel}</p>
             <p><em>${trivia.question}</em></p>
-            
             <button onclick="checkAnswer(${spotId}, 0, ${trivia.correct_index})" style="margin: 2px; padding: 5px; cursor: pointer; background: #bbe1fa; border: 2px solid #0b3c5d; font-weight:bold;">${trivia.options[0]}</button><br>
             <button onclick="checkAnswer(${spotId}, 1, ${trivia.correct_index})" style="margin: 2px; padding: 5px; cursor: pointer; background: #bbe1fa; border: 2px solid #0b3c5d; font-weight:bold;">${trivia.options[1]}</button><br>
             <button onclick="checkAnswer(${spotId}, 2, ${trivia.correct_index})" style="margin: 2px; padding: 5px; cursor: pointer; background: #bbe1fa; border: 2px solid #0b3c5d; font-weight:bold;">${trivia.options[2]}</button>
             <p id="result-${spotId}" style="color: #3282b8; font-weight: bold; margin-top: 5px;"></p>
           </div>
-        `;
-        marker.setPopupContent(popupContent);
-
+        `);
       } catch (error) {
         console.error("AI generation failed.", error);
-        marker.setPopupContent(`<div style="color: red; font-family: 'Courier New';"><b>AI Connection Failed!</b><br>Check your API key or internet connection.</div>`);
+        marker.setPopupContent(`<div style="color: red; font-family: 'Courier New';"><b>AI Connection Failed!</b><br>Check your API key.</div>`);
       }
     }
 
-    // Spawn 3 initial AI Monsters
     spawnAIMonster(39.8, -98.5, "Plastic Blob", "High");
     spawnAIMonster(35.0, -110.0, "Oil Slick", "Medium");
     spawnAIMonster(42.0, -80.0, "Microplastic Swarm", "Low");
 
-    // Click anywhere on the map to spawn a new AI monster!
     map.on('click', function(e) {
-      const types = ["Toxic Sludge", "Trash Golem", "Smog Cloud", "Plastic Phantom"];
-      const randomType = types[Math.floor(Math.random() * types.length)];
-      
-      const kubbleSpeech = document.getElementById('kubble-speech');
-      kubbleSpeech.innerText = "Scanning the waters... an AI monster is appearing!";
-      
-      spawnAIMonster(e.latlng.lat, e.latlng.lng, randomType, "Unknown");
+      spawnAIMonster(e.latlng.lat, e.latlng.lng, "Toxic Sludge", "Unknown");
     });
 
-    // --- Loose Trash Mini-Game ---
-    const trashSprite = L.icon({
-      iconUrl: 'trash.jpg', 
-      iconSize: [30, 30]
-    });
-
+    const trashSprite = L.icon({ iconUrl: 'trash.jpg', iconSize: [30, 30] });
     for (let i = 0; i < 40; i++) {
-      let randomLat = 25 + (Math.random() * 23); 
-      let randomLng = -125 + (Math.random() * 55); 
-      let trashMarker = L.marker([randomLat, randomLng], {icon: trashSprite}).addTo(map);
-      
+      let trashMarker = L.marker([25 + (Math.random() * 23), -125 + (Math.random() * 55)], {icon: trashSprite}).addTo(map);
       trashMarker.on('click', function() {
         playerScore += 20; 
         document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
         map.removeLayer(trashMarker);
-        
-        const kubbleSpeech = document.getElementById('kubble-speech');
-        kubbleSpeech.innerText = "Snagged it! The ocean is getting cleaner!";
-        
         triggerKubbleReaction("cheer");
-        
-        setTimeout(() => {
-           triggerKubbleReaction("neutral");
-        }, 1500);
+        setTimeout(() => triggerKubbleReaction("neutral"), 1500);
       });
     }
 
-    // --- Main Battle Logic ---
     window.checkAnswer = function(spotId, selectedIndex, correctIndex) {
       const resultText = document.getElementById(`result-${spotId}`);
-      const kubbleSpeech = document.getElementById('kubble-speech'); 
-      
       if (selectedIndex === correctIndex) {
         playerScore += 100;
-        let levelUpText = "";
-
         if (playerScore >= playerLevel * 300) {
-          playerLevel++;
-          playerHP = 100; 
-          levelUpText = ` <br>🌟 LEVEL UP to Lv.${playerLevel}!`;
-          
+          playerLevel++; playerHP = 100; 
           document.getElementById('level-display').innerText = "👑 Level: " + playerLevel;
           document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
-          
           if (playerLevel >= 5) {
-            const winScreen = document.getElementById('win-screen');
-            if(winScreen) winScreen.style.display = "flex";
-            const finalScore = document.getElementById('final-score-display');
-            if(finalScore) finalScore.innerText = "Final Score: " + playerScore;
-            triggerKubbleReaction("cheer");
+            document.getElementById('win-screen').style.display = "flex";
+            document.getElementById('final-score-display').innerText = "Final Score: " + playerScore;
             return; 
           }
-          
-          kubbleSpeech.innerText = `Whoa! Level ${playerLevel}! You're unstoppable!`; 
           triggerKubbleReaction("levelup"); 
-        } else {
-          kubbleSpeech.innerText = "Great job! That's one less piece of trash!";
-          triggerKubbleReaction("cheer"); 
-        }
+        } else { triggerKubbleReaction("cheer"); }
 
-        resultText.style.color = "#17b978";
-        resultText.innerHTML = "Correct! You cast Aqua Blast! 🌊" + levelUpText;
+        resultText.style.color = "#17b978"; resultText.innerHTML = "Correct! 🌊";
         document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
-        
-        setTimeout(() => {
-          map.removeLayer(activeMarkers[spotId]);
-          kubbleSpeech.innerText = "Keep it up! Click the map to find more monsters!";
-          triggerKubbleReaction("neutral"); 
-        }, 2000);
-        
+        setTimeout(() => { map.removeLayer(activeMarkers[spotId]); triggerKubbleReaction("neutral"); }, 2000);
       } else {
-        playerHP -= 20; 
-        document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
+        playerHP -= 20; document.getElementById('hp-display').innerText = "❤️ HP: " + playerHP;
         triggerKubbleReaction("ouch"); 
-
         if (playerHP <= 0) {
-          resultText.style.color = "red";
-          resultText.innerText = "Game Over.";
-          kubbleSpeech.innerText = "Oh no... the ocean needs a break. Let's try again!";
-          
-          setTimeout(() => {
-            alert("Game Over! Refresh the page to try again.");
-            location.reload(); 
-          }, 2000);
+          resultText.style.color = "red"; resultText.innerText = "Game Over.";
+          setTimeout(() => location.reload(), 2000);
         } else {
-          resultText.style.color = "orange";
-          resultText.innerText = "Wrong! The monster attacks! -20 HP 💥";
-          kubbleSpeech.innerText = "Ouch! Watch out for their pollution attacks!";
-          
-          setTimeout(() => {
-            triggerKubbleReaction("neutral"); 
-          }, 2000);
+          resultText.style.color = "orange"; resultText.innerText = "Wrong! -20 HP 💥";
+          setTimeout(() => triggerKubbleReaction("neutral"), 2000);
         }
       }
     };
 
-    // --- IRL Sidequest Logic ---
+    // --- AI Image Recognition (IRL Sidequest) ---
     const trashUpload = document.getElementById('trash-upload');
     if (trashUpload) {
       trashUpload.addEventListener('change', function(event) {
-        if (event.target.files.length > 0) {
-          playerScore += 500; 
-          document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const kubbleSpeech = document.getElementById('kubble-speech');
+        kubbleSpeech.innerText = "Scanning image with AI... ⏳";
+        triggerKubbleReaction("neutral");
+
+        // Convert image file to Base64 to send to Gemini
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async function() {
+          const base64Data = reader.result.split(',')[1];
           
-          const kubbleSpeech = document.getElementById('kubble-speech');
-          kubbleSpeech.innerText = "AMAZING! You are a real-world hero! +500 POINTS!";
-          triggerKubbleReaction("cheer"); 
+          const payload = {
+            contents: [{
+              parts: [
+                { text: "Does this image contain trash, garbage, litter, or pollution? Respond with exactly one word: YES or NO." },
+                { inline_data: { mime_type: file.type, data: base64Data } }
+              ]
+            }]
+          };
+
+          try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GLOBAL_API_KEY}`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            
+            if (data.error) throw new Error(data.error.message);
+
+            const aiAnswer = data.candidates[0].content.parts[0].text.trim().toUpperCase();
+
+            if (aiAnswer.includes("YES")) {
+              playerScore += 500; 
+              document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
+              kubbleSpeech.innerText = "AMAZING! Trash detected! +500 POINTS!";
+              triggerKubbleReaction("cheer"); 
+            } else {
+              kubbleSpeech.innerText = "Hmm, I don't see any trash in that picture. Try another one!";
+              triggerKubbleReaction("ouch"); 
+            }
+          } catch (error) {
+            console.error("AI Vision failed.", error);
+            kubbleSpeech.innerText = "AI Vision failed! Check your API key or internet.";
+            triggerKubbleReaction("ouch");
+          }
           
-          alert("Hero detected! 500 bonus points awarded for cleaning up the real world!");
-          event.target.value = ""; 
-          
+          event.target.value = ""; // Reset the file input
           setTimeout(() => {
              triggerKubbleReaction("neutral"); 
              kubbleSpeech.innerText = "Let's clean up the ocean! Click the map to battle!";
-          }, 3000);
-        }
+          }, 4000);
+        };
       });
     }
   </script>
