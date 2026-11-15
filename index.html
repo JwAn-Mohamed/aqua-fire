@@ -40,7 +40,7 @@
 
   <div id="kubble-container" style="position: absolute; bottom: 20px; left: 20px; z-index: 1000; display: flex; align-items: flex-end; gap: 20px;">
     <div id="kubble-speech" style="background-color: #e8f4f8; border: 4px solid #0b3c5d; border-radius: 10px; color: #0b3c5d; padding: 20px 25px; font-family: 'Courier New', Courier, monospace; font-size: 24px; font-weight: bold; max-width: 400px; box-shadow: 4px 4px 0px #0b3c5d; margin-bottom: 80px; position: relative;">
-      Let's clean up the ocean! Click the map to find monsters!
+      Explore the map and click the monsters to clean up the ocean!
     </div>
     <img id="kubble-sprite" src="kubble.png" alt="Kubble" style="width: 250px; height: auto; image-rendering: pixelated; filter: drop-shadow(4px 4px 0px rgba(0,0,0,0.3));">
   </div>
@@ -51,7 +51,7 @@
     // ==========================================
     // 🔑 API KEY SETUP (Paste once here!)
     // ==========================================
-    const GLOBAL_API_KEY = "AQ.Ab8RN6IR1BZ91oJtA3kRwxM51seo6VzVGEsLKiQOPb47qCUTVQ"; 
+    const GLOBAL_API_KEY = "YOUR_API_KEY_HERE"; 
 
     // --- Stats & Audio ---
     let playerScore = 0;
@@ -94,7 +94,7 @@
       }`;
 
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GLOBAL_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GLOBAL_API_KEY}`, {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
@@ -122,13 +122,25 @@
       }
     }
 
+    // Spawn initial monsters
     spawnAIMonster(39.8, -98.5, "Plastic Blob", "High");
     spawnAIMonster(35.0, -110.0, "Oil Slick", "Medium");
     spawnAIMonster(42.0, -80.0, "Microplastic Swarm", "Low");
 
-    map.on('click', function(e) {
-      spawnAIMonster(e.latlng.lat, e.latlng.lng, "Toxic Sludge", "Unknown");
-    });
+    // --- AUTOMATIC MONSTER SPAWNER ---
+    const monsterNames = ["Toxic Sludge", "Chemical Spill", "Ghost Net", "Microplastic Swarm", "Oil Slick"];
+    const severities = ["Low", "Medium", "High", "Critical"];
+
+    setInterval(() => {
+      // Generate random coordinates to scatter them across the map
+      const randomLat = 20 + (Math.random() * 30);
+      const randomLng = -125 + (Math.random() * 60);
+      
+      const randomName = monsterNames[Math.floor(Math.random() * monsterNames.length)];
+      const randomSeverity = severities[Math.floor(Math.random() * severities.length)];
+
+      spawnAIMonster(randomLat, randomLng, randomName, randomSeverity);
+    }, 12000); // Spawns a new monster every 12 seconds
 
     const trashSprite = L.icon({ iconUrl: 'trash.jpg', iconSize: [30, 30] });
     for (let i = 0; i < 40; i++) {
@@ -185,7 +197,6 @@
         kubbleSpeech.innerText = "Scanning image with AI... ⏳";
         triggerKubbleReaction("neutral");
 
-        // Convert image file to Base64 to send to Gemini
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = async function() {
@@ -201,7 +212,7 @@
           };
 
           try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GLOBAL_API_KEY}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GLOBAL_API_KEY}`, {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify(payload)
             });
@@ -226,10 +237,10 @@
             triggerKubbleReaction("ouch");
           }
           
-          event.target.value = ""; // Reset the file input
+          event.target.value = ""; 
           setTimeout(() => {
              triggerKubbleReaction("neutral"); 
-             kubbleSpeech.innerText = "Let's clean up the ocean! Click the map to battle!";
+             kubbleSpeech.innerText = "Explore the map and click the monsters to clean up the ocean!";
           }, 4000);
         };
       });
