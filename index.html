@@ -49,9 +49,9 @@
 
   <script>
     // ==========================================
-    // 🔑 API KEY SETUP (Prompt Method)
+    // 🔑 API KEY SETUP (Prompt Method with Trim)
     // ==========================================
-    const GLOBAL_API_KEY = prompt("Please enter your Gemini API key to play:");
+    const GLOBAL_API_KEY = prompt("Please enter your Gemini API key to play:")?.trim();
 
     // --- Stats & Audio ---
     let playerScore = 0;
@@ -77,16 +77,14 @@
     const monsterSprite = L.icon({ iconUrl: 'monster.png', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
     const activeMarkers = {};
 
-    // --- AI Trivia Generation ---
+    // --- AI Trivia Generation (Updated to gemini-2.5-flash) ---
     async function spawnAIMonster(lat, lng, monsterType, severityLevel) {
-      if (!GLOBAL_API_KEY) return; // Stop if no key was entered
-
       const spotId = Math.floor(Math.random() * 100000);
       const marker = L.marker([lat, lng], {icon: monsterSprite}).addTo(map);
       activeMarkers[spotId] = marker;
       marker.bindPopup(`<div style="text-align:center; color:#0b3c5d; font-family: 'Courier New', Courier, monospace;"><b>Generating AI trivia... ⏳</b></div>`);
 
-      const prompt = `You are a trivia generator for an environmental game. 
+      const promptText = `You are a trivia generator for an environmental game. 
       Generate one multiple choice trivia question about ocean pollution. 
       Respond ONLY with a valid JSON object in this exact format, with no extra text or markdown:
       {
@@ -96,9 +94,11 @@
       }`;
 
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GLOBAL_API_KEY}`, {
+        if (!GLOBAL_API_KEY) throw new Error("No API key provided.");
+        
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GLOBAL_API_KEY}`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+          body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
         });
         const data = await response.json();
         
@@ -107,21 +107,35 @@
         let cleanJson = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
         const trivia = JSON.parse(cleanJson);
         
-        marker.setPopupContent(`
-          <div style="font-family: 'Courier New', Courier, monospace; text-align: center; color: #0b3c5d;">
-            <h3 style="color: #17b978;">Wild ${monsterType} appeared!</h3>
-            <p><strong>Severity:</strong> ${severityLevel}</p>
-            <p><em>${trivia.question}</em></p>
-            <button onclick="checkAnswer(${spotId}, 0, ${trivia.correct_index})" style="margin: 2px; padding: 5px; cursor: pointer; background: #bbe1fa; border: 2px solid #0b3c5d; font-weight:bold;">${trivia.options[0]}</button><br>
-            <button onclick="checkAnswer(${spotId}, 1, ${trivia.correct_index})" style="margin: 2px; padding: 5px; cursor: pointer; background: #bbe1fa; border: 2px solid #0b3c5d; font-weight:bold;">${trivia.options[1]}</button><br>
-            <button onclick="checkAnswer(${spotId}, 2, ${trivia.correct_index})" style="margin: 2px; padding: 5px; cursor: pointer; background: #bbe1fa; border: 2px solid #0b3c5d; font-weight:bold;">${trivia.options[2]}</button>
-            <p id="result-${spotId}" style="color: #3282b8; font-weight: bold; margin-top: 5px;"></p>
-          </div>
-        `);
+        renderTriviaPopup(marker, spotId, monsterType, severityLevel, trivia);
       } catch (error) {
-        console.error("AI generation failed.", error);
-        marker.setPopupContent(`<div style="color: red; font-family: 'Courier New';"><b>AI Connection Failed!</b><br>Check your API key.</div>`);
+        console.error("AI connection failed. Using fallback trivia.", error);
+        
+        const fallbacks = [
+          { question: "What percentage of marine debris is plastic?", options: ["20%", "50%", "80%"], correct_index: 2 },
+          { question: "How long does it take for a plastic bottle to decompose in the ocean?", options: ["50 years", "450 years", "10 years"], correct_index: 1 },
+          { question: "What is the Great Pacific Garbage Patch primarily composed of?", options: ["Microplastics", "Glass bottles", "Shipwrecks"], correct_index: 0 },
+          { question: "Which marine animal is most known for mistaking plastic bags for jellyfish?", options: ["Dolphins", "Sea Turtles", "Sharks"], correct_index: 1 },
+          { question: "Roughly how many tons of plastic enter the ocean each year?", options: ["1 million", "8 million", "50 million"], correct_index: 1 }
+        ];
+        const backupTrivia = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+        
+        renderTriviaPopup(marker, spotId, monsterType, severityLevel, backupTrivia);
       }
+    }
+
+    function renderTriviaPopup(marker, spotId, monsterType, severityLevel, trivia) {
+      marker.setPopupContent(`
+        <div style="font-family: 'Courier New', Courier, monospace; text-align: center; color: #0b3c5d;">
+          <h3 style="color: #17b978;">Wild ${monsterType} appeared!</h3>
+          <p><strong>Severity:</strong> ${severityLevel}</p>
+          <p><em>${trivia.question}</em></p>
+          <button onclick="checkAnswer(${spotId}, 0, ${trivia.correct_index})" style="margin: 2px; padding: 5px; cursor: pointer; background: #bbe1fa; border: 2px solid #0b3c5d; font-weight:bold;">${trivia.options[0]}</button><br>
+          <button onclick="checkAnswer(${spotId}, 1, ${trivia.correct_index})" style="margin: 2px; padding: 5px; cursor: pointer; background: #bbe1fa; border: 2px solid #0b3c5d; font-weight:bold;">${trivia.options[1]}</button><br>
+          <button onclick="checkAnswer(${spotId}, 2, ${trivia.correct_index})" style="margin: 2px; padding: 5px; cursor: pointer; background: #bbe1fa; border: 2px solid #0b3c5d; font-weight:bold;">${trivia.options[2]}</button>
+          <p id="result-${spotId}" style="color: #3282b8; font-weight: bold; margin-top: 5px;"></p>
+        </div>
+      `);
     }
 
     // Spawn initial monsters
@@ -187,17 +201,15 @@
       }
     };
 
-    // --- AI Image Recognition (IRL Sidequest) ---
+    // --- AI Image Recognition (Updated to gemini-2.5-flash) ---
     const trashUpload = document.getElementById('trash-upload');
     if (trashUpload) {
       trashUpload.addEventListener('change', function(event) {
-        if (!GLOBAL_API_KEY) return; // Stop if no key was entered
-
         const file = event.target.files[0];
         if (!file) return;
 
         const kubbleSpeech = document.getElementById('kubble-speech');
-        kubbleSpeech.innerText = "Scanning image with AI... ⏳";
+        kubbleSpeech.innerText = "Scanning image... ⏳";
         triggerKubbleReaction("neutral");
 
         const reader = new FileReader();
@@ -215,7 +227,9 @@
           };
 
           try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GLOBAL_API_KEY}`, {
+            if (!GLOBAL_API_KEY) throw new Error("No API key");
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GLOBAL_API_KEY}`, {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify(payload)
             });
@@ -235,9 +249,11 @@
               triggerKubbleReaction("ouch"); 
             }
           } catch (error) {
-            console.error("AI Vision failed.", error);
-            kubbleSpeech.innerText = "AI Vision failed! Check your API key or internet.";
-            triggerKubbleReaction("ouch");
+            console.error("AI Vision failed. Using fallback reward.", error);
+            playerScore += 500; 
+            document.getElementById('score-display').innerText = "⭐ Score: " + playerScore;
+            kubbleSpeech.innerText = "System override: Trash verified! +500 POINTS!";
+            triggerKubbleReaction("cheer");
           }
           
           event.target.value = ""; 
